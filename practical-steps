@@ -1,0 +1,80 @@
+Noted this point in the video (01:51).
+Code pipeline doesn't support the code deploy pod.
+Reference: https://stackoverflow.com/questions/52322707/aws-codepipeline-and-deployingto-eks
+
+Master node is not free. 10cents US dollars per minute.
+----------------------------------------------------------------------------------------------------------------------
+FLOW:
+Code commit - Developers commit and push the code to a particular branch.
+Pipeline will trigger and send the artifact to Code build.
+Code build will create a docker image and push to ECR.
+Once it is pushed, we perform the deployment using kubectl commands.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
+BUILDSPEC.YAML - 5 PHASES
+
+1. INSTALL:
+       - Once the image is up, we need to install these packages = Installing kubectl and IAM authenticator
+       
+2. PRE-BUILD:
+       - Create a tag variable. The image will use this tag.
+       - eks-deployment.yml - Refer Line 18. We are replacing the image to the Repo URI with the tag = @CONTAINER_IMAGE@'"$REPOSITORY:$TAG.
+         Image URL will be replaced here as container image
+       - Login to AWS ECR - (we have to get a token before login). Every 6 hours, we need to renew the token. 
+       - Export the kubeconfig
+
+3. BUILD:
+       - Build the image
+
+4. POST-BUILD:
+       - I am reading the AWS security token (Refer AWS IAM authentication server)
+       - Upadting the kube cofig with the cluster name (with the help of variable)
+       - Deploy
+==========================================================================================================================
+AWS IAM authentication server:
+I have to get a new token each time and keep it.
+Code Build send the token with K8s action. It will go to IAM ID token and check whether user exists or not.
+After that, it will check with the config map whether the user is authenticated to authenticate with the API server.
+Once authentication is done, it will check whether the user has the permission to do the deployment or not.
+==========================================================================================================================
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+Before creating a pipeline, we need to create a ROLE for Code Build.
+
+
+Step 1: IAM POLICIES AND ROLES (Refer PPT for commands)
+Create a policy.
+Create IAM Role. Add this role to Config maps which will allow us to do K8s actions.
+Assign the policy to IAM role
+
+Step 2: Update Config map
+
+Step 3: Patch it
+Now, code build wil have access to do the deployments.
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+ECR
+Create a repository
+
+EKS Cluster
+Create a cluster, 1 node group, 1 EC2 instance
+------------------------------------------------------------------------------------------------------------------------------------------------------------
+CODE PIPELINE
+
+Step 1:
+Pipeline name: 
+Source stage: Code commit, Repo and branch name
+Build stage: Project name, Managed Image, OS: Linux, Standard runtime, Enable Previlege box, Existing service role, Use buildspec file - buildspec.yml, Enable CW logs, Add the environment variables. . 
+
+Env variables
+Repo name: It can be anything
+
+Step 2:
+Skip the deploy stage.
+Create the pipeline.
+
+Step 3:
+Pipeline wll start to trigger automatically.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+We have already created a LB and domain name.
+Hit LB domain name.
+
+Do some changes in app.js and save it.
+Again it will trigger the pipeline
