@@ -1,0 +1,40 @@
+TRUST="{\"Version\": \"2012-10-17\", \"Statement\": [ { \"Effect\": \"Allow\", \"Principal\": { \"AWS\": \"arn:aws:iam::475572841370:user/user1\"}, \"Action\": \"sts:AssumeRole\" } ] }"
+
+----------------------------------------------------------------------------------------------
+
+echo '{"Version": "2012-10-17", "Statement": [ { "Effect": "Allow", "Action": "eks:Decribe*", "Resource": "*"  } ] }' > /tmp/iam-role-policy
+
+----------------------------------------------------------------------------------------------
+
+aws iam create-role --role-name eks-demo-app-kubectl --assume-role-policy-document "$TRUST" --output text --query 'Role.Arn'
+arn:aws:iam::475572841370:role/eks-demo-app-kubectl
+
+----------------------------------------------------------------------------------------------
+
+aws iam put-role-policy --role-name eks-demo-app-kubectl --policy-name eks-describe --policy-document file:///tmp/iam-role-policy
+
+----------------------------------------------------------------------------------------------
+
+ROLE="  - rolearn: arn:aws:iam::475572841370:role/eks-demo-app-kubectl\n   username: build\n   groups:\n     - system:masters"
+
+----------------------------------------------------------------------------------------------
+
+kubectl get -n kube-system configmap/aws-auth -o yaml | awk "/mapRoles: \|/{print;print \"$ROLE\";next}1" > /tmp/aws-auth-patch.yml
+
+----------------------------------------------------------------------------------------------
+
+aws eks update-kubeconfig --name november
+
+----------------------------------------------------------------------------------------------
+
+
+arn:aws:iam::475572841370:role/eks-demo-app-kubectl
+
+
+----------------------------------------------------------------------------------------------
+
+REPOSITORY_NAME eks-demo
+ENVIRONMENT_NAME demo-eks-env
+REPOSITORY_URI 475572841370.dkr.ecr.ap-south-1.amazonaws.com/demo
+EKS_KUBECTL_ROLE_ARN arn:aws:iam::475572841370:user/user1
+EKS_CLUSTER_ARN arn:aws:eks:ap-south-1:475572841370:cluster/november
